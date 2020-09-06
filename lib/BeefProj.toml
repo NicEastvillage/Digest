@@ -1,0 +1,6 @@
+FileVersion = 1
+
+[Project]
+Name = "Digest"
+TargetType = "BeefLib"
+StartupObject = "Digest.Program"
