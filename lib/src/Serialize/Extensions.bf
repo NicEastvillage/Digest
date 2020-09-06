@@ -1,4 +1,5 @@
 using Digest.Serialize;
+using System.Diagnostics;
 
 namespace System
 {
@@ -10,11 +11,28 @@ namespace System
 		}
 	}
 
+	extension Int64 : Serializable
+	{
+		public Result<void> Serialize(Serializer S)
+		{
+			return S.SerializeInt64((int)this);
+		}
+	}
+
 	extension Float : Serializable
 	{
 		public Result<void> Serialize(Serializer S)
 		{
 			return S.SerializeFloat((float)this);
+		}
+	}
+
+	extension Object : Serializable
+	{
+		public Result<void> Serialize(Serializer S)
+		{
+			Debug.WriteLine("# Object");
+			return S.SerializeObject(this);
 		}
 	}
 }
@@ -25,6 +43,7 @@ namespace System.Collections
 	{
 		public Result<void> Serialize(Serializer S)
 		{
+			Debug.WriteLine("# List");
 			let seq = Try!(S.SerializeList(Count));
 			defer delete seq;
 
