@@ -127,6 +127,7 @@ namespace Digest.Serialize
 			{
 				if (value == null)
 					return S.SerializeNull();
+
 				return value.Serialize(S);
 			}
 		}

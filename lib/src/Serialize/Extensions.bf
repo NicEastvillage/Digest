@@ -29,10 +29,17 @@ namespace System
 
 	extension Object : Serializable
 	{
-		public Result<void> Serialize(Serializer S)
+		public virtual Result<void> Serialize(Serializer S)
 		{
-			Debug.WriteLine("# Object");
 			return S.SerializeObject(this);
+		}
+	}
+
+	extension String : Serializable
+	{
+		public override Result<void> Serialize(Serializer S)
+		{
+			return S.SerializeString(this);
 		}
 	}
 }
@@ -41,9 +48,8 @@ namespace System.Collections
 {
 	extension List<T> : Serializable where T : Serializable
 	{
-		public Result<void> Serialize(Serializer S)
+		public override Result<void> Serialize(Serializer S)
 		{
-			Debug.WriteLine("# List");
 			let seq = Try!(S.SerializeList(Count));
 			defer delete seq;
 
@@ -59,7 +65,7 @@ namespace System.Collections
 		where K : Serializable
 		where V : Serializable
 	{
-		public Result<void> Serialize(Serializer S)
+		public override Result<void> Serialize(Serializer S)
 		{
 			let map = Try!(S.SerializeDictionary(Count));
 			defer delete map;
