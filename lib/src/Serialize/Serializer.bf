@@ -39,19 +39,20 @@ namespace Digest.Serialize
 
 		public abstract Result<MapSerializer> SerializeDictionary(int count);
 
+		public abstract Result<void> SerializeNull();
+
 		protected abstract Result<ObjectSerializer> SerializeObject(String className);
 
 		public Result<void> Serialize(Serializable item)
 		{
 			// Dynamic dispatching
+			if (item == null)
+				return SerializeNull();
 			return item.Serialize(this);
 		}
 
 		public Result<void> SerializeObject(Object obj)
 		{
-			/*if (obj is Serializable)
-				return Serialize(obj as Serializable);*/
-
 			let type = obj.GetType();
 			let typeName = scope String();
 			type.GetName(typeName);
@@ -66,6 +67,7 @@ namespace Digest.Serialize
 			for (let field in fields)
 			{
 				let value = Try!(ExtractValueFromField(obj, field));
+				defer delete value;
 				let fieldName = scope String(field.Name);
 
 				Try!(s.SerializeField(fieldName, value));
@@ -74,6 +76,7 @@ namespace Digest.Serialize
 			return s.End();
 		}
 
+		// NOTE: The returned value is boxed and the box should be deleted by caller
 		private Result<Serializable> ExtractValueFromField(Object obj, FieldInfo field)
 		{
 			let fieldType = field.FieldType;
@@ -84,9 +87,9 @@ namespace Digest.Serialize
 				switch (fieldType)
 				{
 				case typeof(int):
-					return .Ok(fieldVariant.Get<int>());
+					return .Ok(new box fieldVariant.Get<int>());
 				case typeof(float):
-					return .Ok(fieldVariant.Get<float>());
+					return .Ok(new box fieldVariant.Get<float>());
 				// ...
 				default:
 					return .Err;
@@ -96,27 +99,36 @@ namespace Digest.Serialize
 			{
 				if (!fieldVariant.HasValue)
 				{
-					return .Ok(null);
+					return .Ok(new Box(null));
 				}
 
 				var fieldObjectValue = fieldVariant.Get<Object>();
 
 				if (fieldObjectValue == null)
 				{
-					return .Ok(null);
+					return .Ok(new Box(null));
 				}
 
-				if (fieldObjectValue is Serializable)
-				{
-					return .Ok(fieldObjectValue as Serializable);
-				}
-				else
-				{
-					return .Ok(Try!(Serialize(fieldObjectValue)));
-				}
+				return .Ok(new Box(fieldObjectValue));
 			}
 
 			return .Err;
+		}
+
+		private class Box : Serializable
+		{
+			Object value;
+			public this(Object value)
+			{
+				this.value = value;
+			}
+
+			public new Result<void> Serialize(Serializer S)
+			{
+				if (value == null)
+					return S.SerializeNull();
+				return value.Serialize(S);
+			}
 		}
 	}
 }
