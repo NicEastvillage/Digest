@@ -102,7 +102,7 @@ namespace Digest.Serialize
 					return .Ok(new Box(null));
 				}
 
-				var fieldObjectValue = fieldVariant.Get<Object>();
+				let fieldObjectValue = fieldVariant.Get<Object>();
 
 				if (fieldObjectValue == null)
 				{
@@ -117,7 +117,8 @@ namespace Digest.Serialize
 
 		private class Box : Serializable
 		{
-			Object value;
+			private Object value;
+
 			public this(Object value)
 			{
 				this.value = value;
@@ -125,10 +126,7 @@ namespace Digest.Serialize
 
 			public new Result<void> Serialize(Serializer S)
 			{
-				if (value == null)
-					return S.SerializeNull();
-
-				return value.Serialize(S);
+				return S.Serialize(value);
 			}
 		}
 	}
