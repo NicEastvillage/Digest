@@ -1,6 +1,7 @@
 using System;
 namespace Digest.Serialize
 {
+	[Reflect(ReflectImplementer=.DynamicBoxing)]
 	interface Serializable
 	{
 		public Result<void> Serialize(Serializer S);

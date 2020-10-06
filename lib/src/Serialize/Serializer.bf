@@ -29,9 +29,33 @@ namespace Digest.Serialize
 	{
 		public abstract Result<void> SerializeInt(int value);
 
+		public abstract Result<void> SerializeInt8(int8 value);
+
+		public abstract Result<void> SerializeInt16(int16 value);
+
+		public abstract Result<void> SerializeInt32(int32 value);
+
 		public abstract Result<void> SerializeInt64(int64 value);
 
+		public abstract Result<void> SerializeUInt(uint value);
+
+		public abstract Result<void> SerializeUInt8(uint8 value);
+
+		public abstract Result<void> SerializeUInt16(uint16 value);
+
+		public abstract Result<void> SerializeUInt32(uint32 value);
+
+		public abstract Result<void> SerializeUInt64(uint64 value);
+
+		public abstract Result<void> SerializeChar8(char8 value);
+
+		public abstract Result<void> SerializeChar16(char16 value);
+
 		public abstract Result<void> SerializeFloat(float value);
+
+		public abstract Result<void> SerializeDouble(double value);
+
+		public abstract Result<void> SerializeBool(bool value);
 
 		public abstract Result<void> SerializeString(StringView str);
 
@@ -74,42 +98,24 @@ namespace Digest.Serialize
 			return s.End();
 		}
 
-		private Result<void> SerializeField(ObjectSerializer os, StringView fieldName, Type fieldType, Variant fieldVariant)
+		private Result<void> SerializeField(ObjectSerializer objSerializer, StringView fieldName, Type fieldType, Variant fieldVariant)
 		{
-			if (fieldType.IsPrimitive)
+			if (fieldType.IsValueType)
 			{
-				switch (fieldType)
-				{
-				case typeof(int):
-					return Try!(os.SerializeField(fieldName, fieldVariant.Get<int>()));
-				case typeof(float):
-					return Try!(os.SerializeField(fieldName, fieldVariant.Get<float>()));
-				// ...
-				default:
-					return .Err;
-				}
+				let boxed = fieldVariant.GetBoxed().Get();
+				defer delete boxed;
+				return objSerializer.SerializeField(fieldName, boxed);
 			}
 			else if (fieldType.IsObject)
 			{
 				if (!fieldVariant.HasValue)
 				{
-					return os.SerializeField(fieldName, null);
+					return objSerializer.SerializeField(fieldName, null);
 				}
 
 				let fieldObjectValue = fieldVariant.Get<Object>();
 
-				if (fieldObjectValue == null)
-				{
-					return os.SerializeField(fieldName, null);
-				}
-
-				return os.SerializeField(fieldName, fieldObjectValue);
-			}
-			else if (fieldType.IsStruct)
-			{
-				let st = fieldVariant.GetBoxed().Get();
-				defer delete st;
-				return os.SerializeField(fieldName, st);
+				return objSerializer.SerializeField(fieldName, fieldObjectValue);
 			}
 
 			return .Err;
