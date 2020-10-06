@@ -42,6 +42,14 @@ namespace System
 			return S.SerializeString(this);
 		}
 	}
+
+	extension StringView : Serializable, Serialized
+	{
+		public Result<void> Serialize(Serializer S)
+		{
+			return S.SerializeString(this);
+		}
+	}
 }
 
 namespace System.Collections

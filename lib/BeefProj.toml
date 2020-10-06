@@ -4,3 +4,8 @@ FileVersion = 1
 Name = "Digest"
 TargetType = "BeefLib"
 StartupObject = "Digest.Program"
+
+[[Configs.Debug.Win64.DistinctOptions]]
+Filter = ":Digest.Serialize.Serialized"
+ReflectAlwaysInclude = "IncludeAll"
+ReflectBoxing = true

@@ -20,7 +20,7 @@ namespace Digest.Serialize
 
 	interface ObjectSerializer
 	{
-		public Result<void> SerializeField(String fieldName, Serializable value);
+		public Result<void> SerializeField(StringView fieldName, Serializable value);
 
 		public Result<void> End();
 	}
@@ -60,36 +60,30 @@ namespace Digest.Serialize
 			let s = Try!(SerializeObject(typeName));
 			defer delete s;
 
-			let fields = type.GetFields();
-
 			// TODO write fields of base type
 
-			for (let field in fields)
+			for (let field in type.GetFields())
 			{
-				let value = Try!(ExtractValueFromField(obj, field));
-				defer delete value;
+				let fieldType = field.FieldType;
+				let fieldVariant = field.GetValue(obj).Get();
 				let fieldName = scope String(field.Name);
 
-				Try!(s.SerializeField(fieldName, value));
+				Try!(SerializeField(s, fieldName, fieldType, fieldVariant));
 			}
 
 			return s.End();
 		}
 
-		// NOTE: The returned value is boxed and the box should be deleted by caller
-		private Result<Serializable> ExtractValueFromField(Object obj, FieldInfo field)
+		private Result<void> SerializeField(ObjectSerializer os, StringView fieldName, Type fieldType, Variant fieldVariant)
 		{
-			let fieldType = field.FieldType;
-			let fieldVariant = field.GetValue(obj).Get();
-
 			if (fieldType.IsPrimitive)
 			{
 				switch (fieldType)
 				{
 				case typeof(int):
-					return .Ok(new box fieldVariant.Get<int>());
+					return Try!(os.SerializeField(fieldName, fieldVariant.Get<int>()));
 				case typeof(float):
-					return .Ok(new box fieldVariant.Get<float>());
+					return Try!(os.SerializeField(fieldName, fieldVariant.Get<float>()));
 				// ...
 				default:
 					return .Err;
@@ -99,35 +93,26 @@ namespace Digest.Serialize
 			{
 				if (!fieldVariant.HasValue)
 				{
-					return .Ok(new Box(null));
+					return os.SerializeField(fieldName, null);
 				}
 
 				let fieldObjectValue = fieldVariant.Get<Object>();
 
 				if (fieldObjectValue == null)
 				{
-					return .Ok(new Box(null));
+					return os.SerializeField(fieldName, null);
 				}
 
-				return .Ok(new Box(fieldObjectValue));
+				return os.SerializeField(fieldName, fieldObjectValue);
+			}
+			else if (fieldType.IsStruct)
+			{
+				let st = fieldVariant.GetBoxed().Get();
+				defer delete st;
+				return os.SerializeField(fieldName, st);
 			}
 
 			return .Err;
-		}
-
-		private class Box : Serializable
-		{
-			private Object value;
-
-			public this(Object value)
-			{
-				this.value = value;
-			}
-
-			public new Result<void> Serialize(Serializer S)
-			{
-				return S.Serialize(value);
-			}
 		}
 	}
 }
