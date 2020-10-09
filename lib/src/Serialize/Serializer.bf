@@ -81,21 +81,34 @@ namespace Digest.Serialize
 			let typeName = scope String();
 			type.GetName(typeName);
 
-			let s = Try!(SerializeObject(typeName));
-			defer delete s;
+			let objSerializer = Try!(SerializeObject(typeName));
+			defer delete objSerializer;
 
-			// TODO write fields of base type
+			SerializeFieldsInHierarchy(objSerializer, type, obj);
+
+			return objSerializer.End();
+		}
+
+		private Result<void> SerializeFieldsInHierarchy(ObjectSerializer objSerializer, Type type, Object obj)
+		{
+			let baze = type.BaseType;
+
+			if (baze != typeof(Object) && baze != typeof(ValueType))
+			{
+				Try!(SerializeFieldsInHierarchy(objSerializer, baze, obj));
+			}
 
 			for (let field in type.GetFields())
 			{
 				let fieldType = field.FieldType;
 				let fieldVariant = field.GetValue(obj).Get();
 				let fieldName = scope String(field.Name);
+				Debug.WriteLine(fieldName);
 
-				Try!(SerializeField(s, fieldName, fieldType, fieldVariant));
+				Try!(SerializeField(objSerializer, fieldName, fieldType, fieldVariant));
 			}
 
-			return s.End();
+			return .Ok;
 		}
 
 		private Result<void> SerializeField(ObjectSerializer objSerializer, StringView fieldName, Type fieldType, Variant fieldVariant)
